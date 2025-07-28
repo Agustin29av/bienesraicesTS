@@ -3,47 +3,48 @@
 import { Router } from 'express';
 // Importamos a nuestro "capataz" de propiedades (el controlador)
 import * as PropertyController from '../controllers/PropertyController';
+// <-- NUEVO: Importamos los middlewares de autenticación y autorización
+import { authenticateToken, authorizeRoles } from '../middlewares/authMiddleware';
 
 // Creamos un nuevo "router" de Express.
-// Este router es como un sub-mapa de caminos que luego montaremos en el 'index.ts'
-// bajo la ruta principal /api/properties.
 const router = Router();
 
 // --- Definición de Rutas para Propiedades ---
 
 // IMPORTANTE: Las rutas más específicas deben ir ANTES que las rutas más generales con parámetros.
 
-// NUEVA RUTA: Buscar propiedades por texto
 // GET /api/properties/search
-// Esta ruta es más específica que /:id, por eso va primero.
-router.get('/search', PropertyController.searchProperties); // <-- AÑADIDA NUEVA RUTA para búsqueda
+// Ruta para buscar propiedades por texto. Esta ruta NO requiere autenticación.
+router.get('/search', PropertyController.searchProperties);
 
-// NUEVA RUTA: Obtener propiedades con detalles del vendedor
 // GET /api/properties/with-sellers
-// Esta ruta es más específica que /:id, por eso va primero.
+// Ruta para obtener propiedades con detalles del vendedor. Esta ruta NO requiere autenticación.
 router.get('/with-sellers', PropertyController.getPropertiesWithSellerInfo);
 
 // GET /api/properties/:id
-// Obtener una propiedad por su ID. Va DESPUÉS de rutas más específicas.
+// Obtener una propiedad por su ID. Esta ruta NO requiere autenticación.
 router.get('/:id', PropertyController.getPropertyById);
 
 // GET /api/properties
-// Obtener todas las propiedades. Esta ruta es la más general.
+// Obtener todas las propiedades. Esta ruta NO requiere autenticación.
 router.get('/', PropertyController.getProperties);
 
+// Rutas PROTEGIDAS: Solo usuarios autenticados y con roles específicos pueden acceder.
+// Aplicamos 'authenticateToken' para verificar el JWT.
+// Aplicamos 'authorizeRoles' para verificar si el usuario tiene permiso (ej. 'admin' o 'seller').
+
 // POST /api/properties
-// Crear una nueva propiedad.
-router.post('/', PropertyController.createProperty);
+// Crear una nueva propiedad. Solo 'admin' o 'seller' pueden crear propiedades.
+router.post('/', authenticateToken, authorizeRoles(['admin', 'seller']), PropertyController.createProperty);
 
 // PUT /api/properties/:id
-// Actualizar una propiedad por su ID.
-router.put('/:id', PropertyController.updateProperty);
+// Actualizar una propiedad por su ID. Solo 'admin' o 'seller' pueden actualizar propiedades.
+router.put('/:id', authenticateToken, authorizeRoles(['admin', 'seller']), PropertyController.updateProperty);
 
 // DELETE /api/properties/:id
-// Eliminar una propiedad por su ID.
-router.delete('/:id', PropertyController.removeProperty);
+// Eliminar una propiedad por su ID. Solo 'admin' o 'seller' pueden eliminar propiedades.
+router.delete('/:id', authenticateToken, authorizeRoles(['admin', 'seller']), PropertyController.removeProperty);
 
 
 // Exportamos este router para que pueda ser "montado" en el archivo principal 'index.ts'.
-// Esto mantiene nuestras rutas organizadas y separadas por módulos.
 export default router;

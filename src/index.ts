@@ -1,11 +1,14 @@
+// src/index.ts
+
 import express from 'express';
 import dotenv from 'dotenv';
 // Importamos la conexión a la base de datos. Al importarlo, se ejecuta el código de conexión.
 import './config/db'; // Asumo que tu archivo de conexión a la DB está en 'src/config/db.ts'
 
 // Importamos los routers (nuestros "sub-mapas de caminos") para cada módulo.
-import sellersRoutes from './routes/Sellers'; // Rutas para vendedores
-import propertiesRoutes from './routes/properties'; // Rutas para propiedades
+import sellersRoutes from './routes/Sellers';     // Rutas para vendedores
+import propertiesRoutes from './routes/Properties'; // Rutas para propiedades
+import usersRoutes from './routes/Users';         // <-- NUEVO: Importamos las rutas de usuarios
 
 // Carga las variables de entorno desde el archivo .env
 // Esto debe hacerse al principio para que las variables estén disponibles en toda la aplicación.
@@ -28,6 +31,9 @@ app.use(express.json());
 // deben ser manejadas por 'sellersRoutes', y lo mismo para 'properties'.
 app.use('/api/sellers', sellersRoutes);
 app.use('/api/properties', propertiesRoutes);
+
+// <-- NUEVO: Montar las rutas de usuarios bajo el prefijo /api/users
+app.use('/api/users', usersRoutes);
 
 // Ruta de prueba simple para verificar que el servidor está funcionando.
 // Cuando accedes a la raíz del servidor (ej. http://localhost:3000/),
