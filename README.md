@@ -1,7 +1,4 @@
 ✅ Proyecto 1: bienesraicesTS (Backend)
-markdown
-Copiar
-Editar
 # Bienes Raíces API - Backend
 
 Este es el backend de la aplicación de Bienes Raíces, construido con Node.js, Express, TypeScript y MySQL.  
