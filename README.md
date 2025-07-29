@@ -26,7 +26,7 @@ ts-node-dev: Herramienta para desarrollo con TypeScript que reinicia el servidor
 Sigue estos pasos para configurar y ejecutar el backend localmente.
 
 1. Clonar el Repositorio
-git clone [https://github.com/Agustin29av/bienesraicesTS]
+git clone https://github.com/Agustin29av/bienesraicesTS
 cd bienesraices-ts
 
 2. Instalar Dependencias
