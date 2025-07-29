@@ -1,60 +1,72 @@
-Bienes Raíces API (Backend)
-Este es el backend de la aplicación de Bienes Raíces, construido con Node.js, Express, TypeScript y MySQL. Proporciona una API RESTful para gestionar propiedades, vendedores y usuarios, incluyendo autenticación y autorización.
+✅ Proyecto 1: bienesraicesTS (Backend)
+markdown
+Copiar
+Editar
+# Bienes Raíces API - Backend
 
-🚀 Tecnologías Utilizadas
-Node.js
+Este es el backend de la aplicación de Bienes Raíces, construido con Node.js, Express, TypeScript y MySQL.  
+Proporciona una API RESTful para gestionar propiedades, vendedores y usuarios, incluyendo autenticación y autorización.
 
-Express.js: Framework web para Node.js.
+---
 
-TypeScript: Lenguaje de programación que añade tipado estático a JavaScript.
+## 🚀 Tecnologías Utilizadas
 
-MySQL: Base de datos relacional.
+- **Node.js**: Entorno de ejecución de JavaScript del lado del servidor.
+- **Express.js**: Framework web minimalista para Node.js.
+- **TypeScript**: Lenguaje que agrega tipado estático a JavaScript.
+- **MySQL**: Sistema de gestión de bases de datos relacional.
+- **mysql2/promise**: Cliente MySQL compatible con promesas.
+- **bcryptjs**: Para encriptar contraseñas.
+- **jsonwebtoken**: Para generación y verificación de JWT.
+- **dotenv**: Carga de variables de entorno.
+- **cors**: Middleware para manejo de CORS.
+- **ts-node-dev**: Recarga automática en desarrollo.
 
-mysql2/promise: Cliente MySQL para Node.js con soporte para promesas.
+---
 
-bcryptjs: Para el hashing de contraseñas.
+## 🛠️ Requisitos Previos
 
-jsonwebtoken: Para la generación y verificación de tokens JWT.
+- [Node.js](https://nodejs.org) (versión 14+)
+- [MySQL Server](https://dev.mysql.com/downloads/)
+- [MySQL Workbench](https://www.mysql.com/products/workbench/) (opcional)
+- [Postman](https://www.postman.com/) u otra herramienta para probar la API
 
-dotenv: Para la gestión de variables de entorno.
+---
 
-cors: Middleware para habilitar Cross-Origin Resource Sharing.
+## ⚙️ Configuración del Proyecto
 
-ts-node-dev: Herramienta para desarrollo con TypeScript que reinicia el servidor automáticamente.
+### 1. Clonar el repositorio
 
-⚙️ Configuración del Proyecto
-Sigue estos pasos para configurar y ejecutar el backend localmente.
-
-1. Clonar el Repositorio
+```bash
 git clone https://github.com/Agustin29av/bienesraicesTS
-cd bienesraices-ts
-
-2. Instalar Dependencias
+cd bienesraicesTS
+2. Instalar dependencias
+bash
+Copiar
+Editar
 npm install
+3. Configurar variables de entorno
+Crear el archivo .env con el siguiente contenido:
 
-3. Configurar Variables de Entorno
-Crea un archivo .env en la raíz del proyecto (bienesraices-ts/) con las siguientes variables:
-
+ini
+Copiar
+Editar
 DB_HOST=localhost
 DB_USER=root
-DB_PASSWORD=tu_contraseña_mysql
+DB_PASSWORD=tu_contraseña
 DB_NAME=bienes_raices_db
 PORT=3000
-JWT_SECRET=una_clave_secreta_muy_larga_y_segura_para_jwt
+JWT_SECRET=clave_segura
+⚠️ Cambiar tu_contraseña por tu contraseña real de MySQL.
 
-Asegúrate de reemplazar tu_contraseña_mysql con la contraseña de tu usuario root de MySQL (o el usuario que hayas configurado).
-
-JWT_SECRET debe ser una cadena de texto larga y compleja.
-
-4. Configurar la Base de Datos MySQL
-Asegúrate de tener un servidor MySQL en ejecución. Puedes crear la base de datos y las tablas utilizando las migraciones o scripts SQL que hayas definido para tu proyecto.
-
-Ejemplo de creación de base de datos (en MySQL Workbench o CLI):
-
+🗃️ Configuración de la Base de Datos
+Crear la base de datos y tablas (desde MySQL Workbench o CLI):
+sql
+Copiar
+Editar
 CREATE DATABASE IF NOT EXISTS bienes_raices_db;
 USE bienes_raices_db;
 
--- Tabla de Vendedores
 CREATE TABLE IF NOT EXISTS sellers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -64,7 +76,6 @@ CREATE TABLE IF NOT EXISTS sellers (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Tabla de Usuarios (para autenticación)
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -75,7 +86,6 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Tabla de Propiedades
 CREATE TABLE IF NOT EXISTS properties (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
@@ -89,44 +99,39 @@ CREATE TABLE IF NOT EXISTS properties (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (seller_id) REFERENCES sellers(id) ON DELETE CASCADE
 );
-
 ▶️ Ejecutar la API
-Para iniciar el servidor de desarrollo:
-
+bash
+Copiar
+Editar
 npm run dev
+La API estará disponible en: http://localhost:3000
 
-La API estará disponible en http://localhost:3000 (o el puerto que hayas configurado en tu .env).
-
-🔑 Endpoints de la API
-Aquí hay un resumen de los endpoints principales:
-
+🔑 Endpoints Principales
 Usuarios (/api/users)
-POST /api/users/register: Registrar un nuevo usuario.
+POST /register: Registrar un nuevo usuario.
 
-POST /api/users/login: Iniciar sesión y obtener un token JWT.
+POST /login: Iniciar sesión y obtener token JWT.
 
 Vendedores (/api/sellers)
-GET /api/sellers: Obtener todos los vendedores.
+GET /: Listar todos los vendedores.
 
-GET /api/sellers/:id: Obtener un vendedor por ID.
+GET /:id: Obtener un vendedor por ID.
 
-POST /api/sellers: Crear un nuevo vendedor.
+POST /: Crear un nuevo vendedor.
 
-PUT /api/sellers/:id: Actualizar un vendedor existente.
+PUT /:id: Actualizar un vendedor.
 
-DELETE /api/sellers/:id: Eliminar un vendedor.
+DELETE /:id: Eliminar un vendedor.
 
 Propiedades (/api/properties)
-GET /api/properties: Obtener todas las propiedades.
+GET /: Listar todas las propiedades.
 
-GET /api/properties/:id: Obtener una propiedad por ID.
+GET /:id: Obtener propiedad por ID.
 
-GET /api/properties/search?q=texto: Buscar propiedades por texto.
+GET /with-sellers: Propiedades con información del vendedor (JOIN).
 
-GET /api/properties/with-sellers: Obtener propiedades con información del vendedor.
+POST /: Crear una propiedad (autenticado).
 
-POST /api/properties: Crear una nueva propiedad (Requiere autenticación: admin o seller).
+PUT /:id: Editar una propiedad (autenticado).
 
-PUT /api/properties/:id: Actualizar una propiedad (Requiere autenticación: admin o seller).
-
-DELETE /api/properties/:id: Eliminar una propiedad (Requiere autenticación: admin o seller).
+DELETE /:id: Eliminar una propiedad (autenticado
