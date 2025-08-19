@@ -26,10 +26,10 @@ export const createProperty = async (data: Property): Promise<number> => {
     } = data;
 
     // Obtenemos una conexión individual del pool para manejar la transacción.
-    const conn = await db.getConnection(); // <-- NUEVO: Obtener conexión para transacción
+    const conn = await db.getConnection(); // Obtener conexión para transacción
 
     try {
-        await conn.beginTransaction(); // <-- NUEVO: Iniciar la transacción
+        await conn.beginTransaction(); // Iniciar la transacción
 
         // 1. Insertar la nueva propiedad
         const [result] = await conn.query<ResultSetHeader>(
@@ -44,14 +44,14 @@ export const createProperty = async (data: Property): Promise<number> => {
             [seller_id]
         );
 
-        await conn.commit(); // <-- NUEVO: Confirmar todos los cambios si todo fue bien
+        await conn.commit(); // Confirmar todos los cambios si todo fue bien
         return propertyId;
     } catch (err) {
-        await conn.rollback(); // <-- NUEVO: Deshacer todos los cambios si algo falló
+        await conn.rollback(); // Deshacer todos los cambios si algo falló
         console.error('Error en la transacción al crear propiedad y actualizar contador:', err);
         throw err; // Re-lanzar el error para que el controlador lo maneje
     } finally {
-        conn.release(); // <-- NUEVO: Liberar la conexión de vuelta al pool
+        conn.release(); //Liberar la conexión de vuelta al pool
     }
 };
 
@@ -111,10 +111,10 @@ export const update = async (id: number, data: Partial<Property>): Promise<boole
 // Elimina una propiedad de la base de datos y decrementa el property_count del vendedor.
 export const remove = async (id: number): Promise<boolean> => {
     // Obtenemos una conexión individual del pool para manejar la transacción.
-    const conn = await db.getConnection(); // <-- NUEVO: Obtener conexión para transacción
+    const conn = await db.getConnection(); //Obtener conexión para transacción
 
     try {
-        await conn.beginTransaction(); // <-- NUEVO: Iniciar la transacción
+        await conn.beginTransaction(); // Iniciar la transacción
 
         // 1. Obtener el seller_id de la propiedad ANTES de eliminarla
         const [propertyRows] = await conn.query<RowDataPacket[]>('SELECT seller_id FROM properties WHERE id = ?', [id]);
@@ -141,14 +141,14 @@ export const remove = async (id: number): Promise<boolean> => {
             [sellerId]
         );
 
-        await conn.commit(); // <-- NUEVO: Confirmar todos los cambios si todo fue bien
+        await conn.commit(); // Confirmar todos los cambios si todo fue bien
         return true;
     } catch (err) {
-        await conn.rollback(); // <-- NUEVO: Deshacer todos los cambios si algo falló
+        await conn.rollback(); // Deshacer todos los cambios si algo falló
         console.error('Error en la transacción al eliminar propiedad y actualizar contador:', err);
         throw err; // Re-lanzar el error para que el controlador lo maneje
     } finally {
-        conn.release(); // <-- NUEVO: Liberar la conexión de vuelta al pool
+        conn.release(); // Liberar la conexión de vuelta al pool
     }
 };
 

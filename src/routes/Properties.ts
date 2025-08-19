@@ -3,7 +3,7 @@
 import { Router } from 'express';
 // Importamos a nuestro "capataz" de propiedades (el controlador)
 import * as PropertyController from '../controllers/PropertyController';
-// <-- NUEVO: Importamos los middlewares de autenticación y autorización
+// Importamos los middlewares de autenticación y autorización
 import { authenticateToken, authorizeRoles } from '../middlewares/authMiddleware';
 
 // Creamos un nuevo "router" de Express.

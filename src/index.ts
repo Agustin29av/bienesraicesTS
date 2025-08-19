@@ -4,9 +4,9 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors'; // Importamos el paquete cors
 import { connectDB } from './config/db'; // Importamos la función connectDB
-import propertyRoutes from './routes/Properties'; // <-- CORREGIDO: Vuelve a 'Properties' (mayúscula)
-import sellerRoutes from './routes/Sellers';     // <-- CORREGIDO: Vuelve a 'Sellers' (mayúscula)
-import userRoutes from './routes/Users';         // <-- CORREGIDO: Vuelve a 'Users' (mayúscula)
+import propertyRoutes from './routes/Properties';
+import sellerRoutes from './routes/Sellers';
+import userRoutes from './routes/Users';         
 
 // Cargar variables de entorno
 dotenv.config();
@@ -27,7 +27,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos HTTP permitidos
   allowedHeaders: ['Content-Type', 'Authorization'], // Encabezados permitidos (importante para el token JWT)
 }));
-// Si quieres permitir cualquier origen durante el desarrollo (menos seguro para producción):
+// Si quiero permitir cualquier origen durante el desarrollo (menos seguro para producción):
 // app.use(cors());
 
 // Rutas

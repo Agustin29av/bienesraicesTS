@@ -16,7 +16,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 
 // --- Función para registrar un nuevo usuario ---
 // Hashea la contraseña y guarda el usuario en la base de datos.
-export const registerUser = async (userData: RegisterUser): Promise<number> => { // <-- Asegúrate de que tenga 'export'
+export const registerUser = async (userData: RegisterUser): Promise<number> => { 
     const { name, email, password, role } = userData;
 
     const salt = await bcrypt.genSalt(10);
@@ -31,7 +31,7 @@ export const registerUser = async (userData: RegisterUser): Promise<number> => {
 };
 
 // --- Función para loguear un usuario ---
-// Verifica las credenciales y, si son correctas, genera un JWT.
+// Verifica las credenciales y si ta todo bien, son correctas, genera un JWT.
 export const loginUser = async (loginData: LoginUser): Promise<string | null> => { // <-- Asegúrate de que tenga 'export'
     const { email, password } = loginData;
 

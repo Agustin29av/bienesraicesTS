@@ -4,8 +4,8 @@
 // ResultSetHeader: Para operaciones que modifican la DB (INSERT, UPDATE, DELETE) y nos dan info como el ID insertado o filas afectadas.
 // RowDataPacket: Para operaciones SELECT que devuelven filas de datos.
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
-// Importamos la conexión a la base de datos (nuestra "piscina de conexiones")
-import { db } from '../config/db'; // Asumo que tu conexión se llama 'db' y está en 'config/db'
+// Importamos la conexión a la base de datos 
+import { db } from '../config/db';
 // Importamos el "plano" del vendedor para el tipado
 import { Seller } from '../models/Seller';
 
@@ -15,7 +15,7 @@ export const getAll = async (): Promise<Seller[]> => {
     // Realizamos la consulta SELECT * FROM sellers.
     // El 'db.query' devuelve un array, donde la primera posición '[rows]' contiene los resultados.
     // <RowDataPacket[]> es para que TypeScript sepa el tipo de los resultados crudos de la DB.
-    const [rows] = await db.query<RowDataPacket[]>('SELECT * FROM sellers'); // <-- CORREGIDO: 'SELEC' a 'SELECT'
+    const [rows] = await db.query<RowDataPacket[]>('SELECT * FROM sellers'); 
     // Convertimos las filas de datos crudas a nuestro tipo 'Seller[]' y las devolvemos.
     return rows as Seller[];
 };

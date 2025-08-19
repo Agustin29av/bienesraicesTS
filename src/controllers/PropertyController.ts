@@ -1,17 +1,14 @@
 // src/controllers/PropertyController.ts
 
 import { Request, Response } from 'express';
-// Importamos todas las funciones del servicio de propiedades (nuestro "peón")
 import * as PropertyService from '../services/PropertyServices';
-// Importamos el "plano" o "molde" de cómo debe lucir una propiedad (para validaciones y tipado)
-// También importamos 'PropertyWithSeller' para el nuevo endpoint con JOIN.
 import { Property, PropertyWithSeller } from '../models/Property';
 
 // --- Función para obtener todas las propiedades (GET /api/properties) ---
-// Es el "capataz" que atiende el pedido de "dame todas las propiedades"
+// Atendemos el pedido de "dame todas las propiedades"
 export const getProperties = async (_req: Request, res: Response): Promise<void> => {
     try {
-        // Le pedimos al "peón" (PropertyService) que traiga todas las propiedades de la base de datos
+        // Le pedimos a (PropertyService) que traiga todas las propiedades de la base de datos
         const properties = await PropertyService.getAll();
         // Si todo sale bien, respondemos con la lista de propiedades en formato JSON y un estado 200 OK
         res.status(200).json(properties);
@@ -26,15 +23,15 @@ export const getProperties = async (_req: Request, res: Response): Promise<void>
 };
 
 // --- Función para crear una nueva propiedad (POST /api/properties) ---
-// Este "capataz" maneja el pedido de "crear una nueva propiedad"
+// Atendemos al pedido de "crear una nueva propiedad"
 export const createProperty = async (req: Request, res: Response): Promise<void> => {
     try {
-        // 1. Capturamos los datos que vienen en el "cuerpo" (body) de la petición.
+        // Capturamos los datos que vienen en el "cuerpo" (body) de la petición.
         // Usamos 'as Property' para que TypeScript entienda la forma de los datos,
         // pero la validación real la hacemos línea por línea.
         const { title, price, description, rooms, bathrooms, parking, seller_id } = req.body as Property;
 
-        // 2. Validaciones: ¡Aquí es donde el "capataz" revisa la mercadería antes de aceptarla!
+        // Validaciones: Aca es donde se revisa la mercadería antes de aceptarla!
         // Chequeamos que los campos obligatorios existan, tengan el tipo correcto y no estén vacíos.
         if (!title || typeof title !== 'string' || title.trim() === '') {
             // Si el título no es válido, respondemos con un error 400 (Bad Request) y paramos la ejecución
@@ -72,7 +69,7 @@ export const createProperty = async (req: Request, res: Response): Promise<void>
             title, price, description, rooms, bathrooms, parking, seller_id
         };
 
-        // 4. Le pedimos al "peón" (PropertyService) que guarde esta nueva propiedad en la base de datos.
+        // 4. Le pedimos a (PropertyService) que guarde esta nueva propiedad en la base de datos.
         // Esperamos que el servicio nos devuelva el ID de la propiedad recién creada.
         const propertyId = await PropertyService.createProperty(newProperty);
 
@@ -88,7 +85,7 @@ export const createProperty = async (req: Request, res: Response): Promise<void>
 };
 
 // --- Función para obtener una propiedad por su ID (GET /api/properties/:id) ---
-// Este "capataz" atiende el pedido de "dame la propiedad con este número"
+// Atendendemos al pedido de "dame la propiedad con este número (id)"
 export const getPropertyById = async (req: Request, res: Response): Promise<void> => {
     try {
         // Capturamos el ID que viene en los parámetros de la URL (ej. /api/properties/123)
@@ -101,15 +98,15 @@ export const getPropertyById = async (req: Request, res: Response): Promise<void
             return;
         }
 
-        // Le pedimos al "peón" que busque la propiedad por su ID
+        // Buscamos la propiedad por su ID
         const property = await PropertyService.getById(id);
 
         if (property) {
-            // Si el peón encontró la propiedad, la devolvemos en JSON con estado 200 OK
+            // Si se encontro la propiedad, la devolvemos en JSON con estado 200 OK
             res.json(property);
             return;
         } else {
-            // Si el peón no la encontró, respondemos con 404 Not Found
+            // Si no la encontramos, respondemos con 404 Not Found
             res.status(404).json({ message: 'Property not found // Propiedad no encontrada' });
             return;
         }
@@ -121,7 +118,7 @@ export const getPropertyById = async (req: Request, res: Response): Promise<void
 };
 
 // --- Función para actualizar una propiedad existente (PUT /api/properties/:id) ---
-// Este "capataz" maneja el pedido de "actualizar esta propiedad"
+// Atendemos al pedido de "actualizar esta propiedad"
 export const updateProperty = async (req: Request, res: Response): Promise<void> => {
     try {
         // Capturamos y validamos el ID de la URL
@@ -193,7 +190,7 @@ export const updateProperty = async (req: Request, res: Response): Promise<void>
             return;
         }
 
-        // Le pedimos al "peón" que actualice la propiedad con el ID y los campos proporcionados.
+        // Si esta todo bien actualizamos la propiedad con el ID y los campos proporcionados.
         // Esperamos que el servicio nos diga si la actualización fue exitosa (true/false).
         const success = await PropertyService.update(id, propertyUpdates);
 
@@ -214,7 +211,7 @@ export const updateProperty = async (req: Request, res: Response): Promise<void>
 };
 
 // --- Función para eliminar una propiedad (DELETE /api/properties/:id) ---
-// Este "capataz" maneja el pedido de "eliminar esta propiedad"
+// Atenedmos al pedido de "eliminar esta propiedad"
 export const removeProperty = async (req: Request, res: Response): Promise<void> => {
     try {
         // Capturamos y validamos el ID de la URL
@@ -245,7 +242,7 @@ export const removeProperty = async (req: Request, res: Response): Promise<void>
 };
 
 // --- Función para obtener todas las propiedades con detalles del vendedor (GET /api/properties/with-sellers) ---
-// Este "capataz" atiende el pedido de "dame todas las propiedades con la info de sus vendedores"
+// Atendemos al pedido de "dame todas las propiedades con la info de sus vendedores" ( un JOIN )
 export const getPropertiesWithSellerInfo = async (_req: Request, res: Response): Promise<void> => {
     try {
         // Le pedimos al "peón" (PropertyService) que traiga todas las propiedades con los detalles del vendedor
@@ -262,7 +259,7 @@ export const getPropertiesWithSellerInfo = async (_req: Request, res: Response):
 };
 
 // --- NUEVA FUNCIÓN: Buscar propiedades por texto (GET /api/properties/search?term=...) ---
-// Este "capataz" maneja el pedido de "buscame propiedades que contengan este texto"
+// Atendemos al pedido de "buscame propiedades que contengan este texto"
 export const searchProperties = async (req: Request, res: Response): Promise<void> => {
     try {
         // Capturamos el término de búsqueda desde los query parameters de la URL (ej. ?term=casa)
@@ -274,7 +271,7 @@ export const searchProperties = async (req: Request, res: Response): Promise<voi
             return;
         }
 
-        // Le pedimos al "peón" (PropertyService) que realice la búsqueda
+        // Le pedimos a (PropertyService) que realice la búsqueda
         const foundProperties = await PropertyService.searchPropertiesByText(searchTerm);
 
         // Si se encontraron propiedades, las devolvemos con 200 OK

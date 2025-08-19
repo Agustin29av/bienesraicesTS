@@ -10,7 +10,7 @@ import { Seller } from '../models/Seller';
 // Es el "capataz" que atiende el pedido de "dame todos los vendedores"
 export const getSellers = async (_req: Request, res: Response): Promise<void> => { // <-- Renombrado de getSeller a getSellers para plural
     try {
-        // Le pedimos al "peón" (SellerService) que traiga todos los vendedores de la base de datos
+        // Le pedimos a (SellerService) que traiga todos los vendedores de la base de datos
         const sellers = await SellerService.getAll();
         // Si todo sale bien, respondemos con la lista de vendedores en formato JSON y un estado 200 OK
         res.status(200).json(sellers);
@@ -25,13 +25,13 @@ export const getSellers = async (_req: Request, res: Response): Promise<void> =>
 };
 
 // --- Función para crear un nuevo vendedor (POST /api/sellers) ---
-// Este "capataz" maneja el pedido de "crear un nuevo vendedor"
+// Esto maneja el pedido de "crear un nuevo vendedor"
 export const createSeller = async (req: Request, res: Response): Promise<void> => { // <-- Renombrado de create a createSeller
     try {
         // 1. Capturamos los datos que vienen en el "cuerpo" (body) de la petición.
         const { name, email } = req.body as Seller;
 
-        // 2. Validaciones: ¡El "capataz" revisa la mercadería!
+        // 2. Validaciones:
         if (!name || typeof name !== 'string' || name.trim() === '') {
             res.status(400).json({ message: 'El nombre del vendedor es requerido y debe ser un texto no vacío.' });
             return;
@@ -45,7 +45,7 @@ export const createSeller = async (req: Request, res: Response): Promise<void> =
         // 3. Creamos el objeto con los datos validados.
         const newSeller: Seller = { name, email };
 
-        // 4. Le pedimos al "peón" (SellerService) que guarde este nuevo vendedor.
+        // 4. Le pedimos a(SellerService) que guarde este nuevo vendedor.
         // Esperamos que el servicio nos devuelva el ID del vendedor recién creado.
         const sellerId = await SellerService.createSeller(newSeller);
 
@@ -61,7 +61,7 @@ export const createSeller = async (req: Request, res: Response): Promise<void> =
 };
 
 // --- Función para obtener un vendedor por su ID (GET /api/sellers/:id) ---
-// Este "capataz" atiende el pedido de "dame el vendedor con este número"
+// Esto atiende el pedido de "dame el vendedor con este número"
 export const getSellerById = async (req: Request, res: Response): Promise<void> => {
     try {
         // Capturamos y validamos el ID de la URL
@@ -71,15 +71,15 @@ export const getSellerById = async (req: Request, res: Response): Promise<void> 
             return;
         }
 
-        // Le pedimos al "peón" que busque el vendedor por su ID
+        // Le pedimos que busque el vendedor por su ID
         const seller = await SellerService.getById(id); // <-- Corregido a getById
 
         if (seller) {
-            // Si el peón encontró el vendedor, lo devolvemos en JSON con estado 200 OK
+            // Si encontró el vendedor, lo devolvemos en JSON con estado 200 OK
             res.json(seller);
             return;
         } else {
-            // Si el peón no lo encontró, respondemos con 404 Not Found
+            // Si no lo encontró, respondemos con 404 Not Found
             res.status(404).json({ message: 'Seller not found // Vendedor no encontrado' });
             return;
         }
@@ -91,8 +91,8 @@ export const getSellerById = async (req: Request, res: Response): Promise<void> 
 };
 
 // --- Función para actualizar un vendedor existente (PUT /api/sellers/:id) ---
-// Este "capataz" maneja el pedido de "actualizar este vendedor"
-export const updateSeller = async (req: Request, res: Response): Promise<void> => { // <-- Renombrado de upadteSeller a updateSeller
+// Esto maneja el pedido de "actualizar este vendedor"
+export const updateSeller = async (req: Request, res: Response): Promise<void> => { 
     try {
         // Capturamos y validamos el ID de la URL
         const id = parseInt(req.params.id);
@@ -126,7 +126,7 @@ export const updateSeller = async (req: Request, res: Response): Promise<void> =
             return;
         }
 
-        // Le pedimos al "peón" que actualice el vendedor.
+        // Le pedimos que actualice el vendedor.
         const success = await SellerService.update(id, sellerUpdates);
 
         if (success) {
@@ -144,7 +144,7 @@ export const updateSeller = async (req: Request, res: Response): Promise<void> =
 };
 
 // --- Función para eliminar un vendedor (DELETE /api/sellers/:id) ---
-// Este "capataz" maneja el pedido de "eliminar este vendedor"
+// Esto maneja el pedido de "eliminar este vendedor"
 export const deleteSeller = async (req: Request, res: Response): Promise<void> => {
     try {
         // Capturamos y validamos el ID de la URL
@@ -154,7 +154,7 @@ export const deleteSeller = async (req: Request, res: Response): Promise<void> =
             return;
         }
 
-        // Le pedimos al "peón" que elimine el vendedor.
+        // Le pedimos que elimine el vendedor.
         const success = await SellerService.remove(id);
 
         if (success) {
