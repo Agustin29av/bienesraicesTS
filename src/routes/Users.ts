@@ -1,23 +1,36 @@
-// src/routes/users.ts
+import { Router } from "express";
+import { validate } from "../middlewares/validate";
+import { asyncHandler } from "../utils/asyncHandler";
+import { auth, requireRole } from "../middlewares/authMiddleware";
+import { registerBody, loginBody, userIdParam } from "../DTOs/users.dto";
+import UserController from "../controllers/UserController";
 
-import { Router } from 'express';
-// Importamos a nuestro "capataz" de usuarios (el controlador)
-import * as UserController from '../controllers/UserController';
-
-// Creamos un nuevo "router" de Express para las rutas de usuarios.
 const router = Router();
+const ctrl = new UserController();
 
-// --- Definición de Rutas para Usuarios ---
+// público
+router.post("/register",
+  validate({ body: registerBody }),
+  asyncHandler(ctrl.register)
+);
 
-// POST /api/users/register
-// Ruta para el registro de nuevos usuarios.
-// Cuando alguien hace una petición POST a esta ruta, se llama a la función 'register' del controlador.
-router.post('/register', UserController.register);
+router.post("/login",
+  validate({ body: loginBody }),
+  asyncHandler(ctrl.login)
+);
 
-// POST /api/users/login
-// Ruta para el inicio de sesión de usuarios existentes.
-// Cuando alguien hace una petición POST a esta ruta, se llama a la función 'login' del controlador.
-router.post('/login', UserController.login);
+// privado
+router.get("/me",
+  auth(true),
+  asyncHandler(ctrl.me)
+);
 
-// Exportamos este router para que pueda ser "montado" en el archivo principal 'index.ts'.
+// solo admin (ejemplo)
+router.delete("/:id",
+  auth(true),
+  requireRole("admin"),
+  validate({ params: userIdParam }),
+  asyncHandler(ctrl.remove)
+);
+
 export default router;

@@ -1,92 +1,101 @@
-// src/services/SellerServices.ts
+import { ResultSetHeader, RowDataPacket } from "mysql2/promise";
+import { db } from "../config/db";
 
-// Importamos los tipos necesarios de 'mysql2/promise' para manejar los resultados de las consultas a la DB.
-// ResultSetHeader: Para operaciones que modifican la DB (INSERT, UPDATE, DELETE) y nos dan info como el ID insertado o filas afectadas.
-// RowDataPacket: Para operaciones SELECT que devuelven filas de datos.
-import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
-// Importamos la conexión a la base de datos 
-import { db } from '../config/db';
-// Importamos el "plano" del vendedor para el tipado
-import { Seller } from '../models/Seller';
-
-// --- Función para obtener todos los vendedores ---
-// Le pregunta a la base de datos por todos los vendedores.
-export const getAll = async (): Promise<Seller[]> => {
-    // Realizamos la consulta SELECT * FROM sellers.
-    // El 'db.query' devuelve un array, donde la primera posición '[rows]' contiene los resultados.
-    // <RowDataPacket[]> es para que TypeScript sepa el tipo de los resultados crudos de la DB.
-    const [rows] = await db.query<RowDataPacket[]>('SELECT * FROM sellers'); 
-    // Convertimos las filas de datos crudas a nuestro tipo 'Seller[]' y las devolvemos.
-    return rows as Seller[];
+type ListInput = {
+  page: number;
+  limit: number;
+  sort?: string; // "name:asc" | "name:desc"
 };
 
-// --- Función para crear un nuevo vendedor ---
-// Guarda un nuevo vendedor en la base de datos.
-export const createSeller = async (data: Seller): Promise<number> => { // <-- Ahora promete devolver el ID (number)
-    const { name, email } = data;
+export async function list(input: ListInput) {
+  const { page, limit, sort } = input;
+  const offset = (page - 1) * limit;
 
-    // Ejecutamos la consulta INSERT. Los '?' son placeholders que se reemplazan con los valores del array.
-    // <ResultSetHeader> es para que TypeScript sepa el tipo de la respuesta de un INSERT.
-    const [result] = await db.query<ResultSetHeader>(
-        'INSERT INTO sellers (name, email) VALUES (?, ?)', // <-- CORREGIDO: (?. ?) a (?, ?)
-        [name, email]
-    );
-    // 'result.insertId' contiene el ID que la base de datos asignó automáticamente al nuevo registro.
-    return result.insertId; // Devolvemos el ID del vendedor recién creado
-};
+  let orderBy = "name ASC";
+  if (sort === "name:desc") orderBy = "name DESC";
 
-// --- Función para obtener un vendedor por su ID ---
-// Busca un vendedor específico por su ID.
-export const getById = async (id: number): Promise<Seller | undefined> => { // <-- CORREGIDO: getByIid a getById y Promise<Seller | undefined>
-    // Realizamos la consulta SELECT donde el ID del vendedor coincida.
-    const [rows] = await db.query<RowDataPacket[]>('SELECT * FROM sellers WHERE id = ?', [id]);
-    // Devolvemos la primera fila encontrada (si existe) como tipo 'Seller'.
-    // Si no se encontró ninguna fila, 'rows[0]' será undefined, y la función devolverá undefined.
-    return (rows[0] as Seller) || undefined;
-};
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT id, name, email, property_count
+     FROM sellers
+     ORDER BY ${orderBy}
+     LIMIT ? OFFSET ?`,
+    [limit, offset]
+  );
 
-// --- Función para actualizar un vendedor existente ---
-// Actualiza los campos de un vendedor específico.
-// 'Partial<Seller>' significa que 'data' puede contener solo algunos campos de 'Seller'.
-export const update = async (id: number, data: Partial<Seller>): Promise<boolean> => { // <-- Ahora promete un boolean
-    const fields: string[] = []; // Array para construir las partes 'campo = ?' de la consulta
-    const values: any[] = [];    // Array para guardar los valores correspondientes a los '?'
+  const [countRows] = await db.query<RowDataPacket[]>(
+    "SELECT COUNT(*) as total FROM sellers"
+  );
+  const total = Number((countRows as any)[0].total);
+  const totalPages = Math.ceil(total / limit);
 
-    // Construimos la consulta UPDATE dinámicamente:
-    // Solo añadimos campos a la actualización si están presentes en el objeto 'data'.
-    if (data.name !== undefined) {
-        fields.push('name = ?');
-        values.push(data.name);
-    }
-    if (data.email !== undefined) {
-        fields.push('email = ?');
-        values.push(data.email);
-    }
+  return {
+    data: rows,
+    page,
+    limit,
+    total,
+    totalPages,
+  };
+}
 
-    // Si no hay campos para actualizar (el objeto 'data' estaba vacío o solo tenía campos no válidos),
-    // no hacemos la consulta y devolvemos false.
-    if (fields.length === 0) {
-        return false;
-    }
+export async function findById(id: number) {
+  const [rows] = await db.query<RowDataPacket[]>(
+    "SELECT id, name, email, property_count FROM sellers WHERE id = ?",
+    [id]
+  );
+  return (rows[0] as any) || null;
+}
 
-    // Añadimos el ID al final del array de valores, ya que se usará en la cláusula WHERE.
-    values.push(id);
+export async function create(input: { name: string; email: string; userId?: number }) {
+  const [result] = await db.query<ResultSetHeader>(
+    "INSERT INTO sellers (name, email, user_id) VALUES (?, ?, ?)",
+    [input.name, input.email, input.userId ?? null]
+  );
+  return (result as ResultSetHeader).insertId;
+}
 
-    // Construimos la consulta SQL final uniendo los campos y añadiendo la cláusula WHERE.
-    const query = `UPDATE sellers SET ${fields.join(', ')} WHERE id = ?`;
-    // Ejecutamos la consulta UPDATE.
-    const [result] = await db.query<ResultSetHeader>(query, values);
+export async function update(id: number, input: Partial<{ name: string; email: string }>) {
+  const fields: string[] = [];
+  const values: any[] = [];
 
-    // 'result.affectedRows' nos dice cuántas filas fueron modificadas.
-    // Si es mayor que 0, significa que se actualizó al menos una fila (el vendedor existe y se modificó).
-    return result.affectedRows > 0; // Devolvemos true si se actualizó, false si no.
-};
+  if (input.name !== undefined) {
+    fields.push("name = ?");
+    values.push(input.name);
+  }
+  if (input.email !== undefined) {
+    fields.push("email = ?");
+    values.push(input.email);
+  }
 
-// --- Función para eliminar un vendedor ---
-// Elimina un vendedor de la base de datos por su ID.
-export const remove = async (id: number): Promise<boolean> => { // <-- Ahora promete un boolean
-    // Ejecutamos la consulta DELETE.
-    const [result] = await db.query<ResultSetHeader>('DELETE FROM sellers WHERE id = ?', [id]);
-    // Devolvemos true si se eliminó al menos una fila, false si no se encontró el ID.
-    return result.affectedRows > 0; // Devolvemos true si se eliminó, false si no.
-};
+  if (!fields.length) return;
+
+  values.push(id);
+  const [result] = await db.query<ResultSetHeader>(
+    `UPDATE sellers SET ${fields.join(", ")} WHERE id = ?`,
+    values
+  );
+  if ((result as ResultSetHeader).affectedRows === 0) {
+    const err = new Error("Seller not found");
+    (err as any).status = 404;
+    throw err;
+  }
+}
+
+export async function remove(id: number) {
+  // Opcional: si querés impedir borrar si tiene propiedades:
+  // const [rows] = await db.query<RowDataPacket[]>(
+  //   "SELECT property_count FROM sellers WHERE id = ?",
+  //   [id]
+  // );
+  // if (!rows.length) { const err = new Error("Seller not found"); (err as any).status = 404; throw err; }
+  // if (rows[0].property_count > 0) { const err = new Error("Seller has properties"); (err as any).status = 409; throw err; }
+
+  const [result] = await db.query<ResultSetHeader>(
+    "DELETE FROM sellers WHERE id = ?",
+    [id]
+  );
+  if ((result as ResultSetHeader).affectedRows === 0) {
+    const err = new Error("Seller not found");
+    (err as any).status = 404;
+    throw err;
+  }
+}

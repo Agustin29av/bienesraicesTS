@@ -1,66 +1,83 @@
-// src/services/UserServices.ts
-
-// Importamos los tipos necesarios de 'mysql2/promise' para manejar los resultados de las consultas a la DB.
-import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
-// Importamos la conexión a la base de datos.
+import { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { db } from "../config/db";
-// Importamos las interfaces para el usuario.
-import { User, RegisterUser, LoginUser } from '../models/Users';
-// Importamos bcryptjs para el hashing de contraseñas.
-import bcrypt from 'bcryptjs';
-// Importamos jsonwebtoken para la creación y verificación de JWTs.
-import jwt from 'jsonwebtoken';
+import { User, RegisterUser } from "../models/Users";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
-// Obtenemos la clave secreta para JWT desde las variables de entorno.
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 
-// --- Función para registrar un nuevo usuario ---
-// Hashea la contraseña y guarda el usuario en la base de datos.
-export const registerUser = async (userData: RegisterUser): Promise<number> => { 
-    const { name, email, password, role } = userData;
+// Crea un usuario y devuelve el insertId
+export async function register(userData: RegisterUser): Promise<number> {
+  const { name, email, password, role } = userData;
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+  // ¿Email ya usado?
+  const [exists] = await db.query<RowDataPacket[]>(
+    "SELECT id FROM users WHERE email = ?",
+    [email]
+  );
+  if ((exists as any[]).length) {
+    const err = new Error("Email already in use");
+    (err as any).status = 409;
+    throw err;
+  }
 
-    const [result] = await db.query<ResultSetHeader>(
-        'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
-        [name, email, hashedPassword, role || 'buyer']
-    );
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
 
-    return result.insertId;
-};
+  const [result] = await db.query<ResultSetHeader>(
+    "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
+    [name, email, hashedPassword, role || "buyer"]
+  );
 
-// --- Función para loguear un usuario ---
-// Verifica las credenciales y si ta todo bien, son correctas, genera un JWT.
-export const loginUser = async (loginData: LoginUser): Promise<string | null> => { // <-- Asegúrate de que tenga 'export'
-    const { email, password } = loginData;
+  return (result as ResultSetHeader).insertId;
+}
 
-    const [rows] = await db.query<RowDataPacket[]>('SELECT * FROM users WHERE email = ?', [email]);
-    const user = rows[0] as User;
+export async function login(email: string, password: string): Promise<{ token: string }> {
+  const [rows] = await db.query<RowDataPacket[]>(
+    "SELECT * FROM users WHERE email = ?",
+    [email]
+  );
+  const user = rows[0] as User | undefined;
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-        return null;
-    }
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    const err = new Error("Invalid credentials");
+    (err as any).status = 401;
+    throw err;
+  }
 
-    const payload = {
-        id: user.id,
-        email: user.email,
-        role: user.role
-    };
+  // Buscamos el sellerId vinculado a este user
+  const [srows] = await db.query<RowDataPacket[]>(
+    "SELECT id FROM sellers WHERE user_id = ? LIMIT 1",
+    [user.id]
+  );
+  const sellerId = (srows as RowDataPacket[])[0]?.id as number | undefined;
 
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
+  const payload = { id: user.id, email: user.email, role: user.role, sellerId }; 
+  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
 
-    return token;
-};
+  return { token };
+}
 
-// --- Función para encontrar un usuario por email (útil para validaciones) ---
-export const findUserByEmail = async (email: string): Promise<User | undefined> => { // <-- Asegúrate de que tenga 'export'
-    const [rows] = await db.query<RowDataPacket[]>('SELECT * FROM users WHERE email = ?', [email]);
-    return (rows[0] as User) || undefined;
-};
 
-// --- Función para obtener un usuario por ID (sin contraseña) ---
-export const getUserById = async (id: number): Promise<Omit<User, 'password'> | undefined> => { // <-- Asegúrate de que tenga 'export'
-    const [rows] = await db.query<RowDataPacket[]>('SELECT id, name, email, role, created_at, updated_at FROM users WHERE id = ?', [id]);
-    return (rows[0] as Omit<User, 'password'>) || undefined;
-};
+// Trae un usuario por id (sin password). Si no existe, devuelve null.
+export async function findById(id: number): Promise<Omit<User, "password"> | null> {
+  const [rows] = await db.query<RowDataPacket[]>(
+    "SELECT id, name, email, role, created_at, updated_at FROM users WHERE id = ?",
+    [id]
+  );
+  const u = rows[0] as Omit<User, "password"> | undefined;
+  return u ?? null;
+}
+
+// Elimina un usuario por id. Lanza 404 si no existe.
+export async function remove(id: number): Promise<void> {
+  const [result] = await db.query<ResultSetHeader>(
+    "DELETE FROM users WHERE id = ?",
+    [id]
+  );
+  if ((result as ResultSetHeader).affectedRows === 0) {
+    const err = new Error("User not found");
+    (err as any).status = 404;
+    throw err;
+  }
+}
