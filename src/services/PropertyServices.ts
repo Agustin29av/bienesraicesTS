@@ -1,6 +1,18 @@
 import { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { db } from "../config/db";
 
+export async function getOwnerUserId(propertyId: number): Promise<number | null> {
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT s.user_id AS ownerUserId
+       FROM properties p
+       JOIN sellers s ON s.id = p.seller_id
+      WHERE p.id = ?`,
+    [propertyId]
+  );
+  if (!(rows as any[]).length) return null;
+  return Number((rows[0] as any).ownerUserId);
+}
+
 type ListInput = {
   page: number;
   limit: number;
@@ -147,7 +159,7 @@ export async function create(input: {
       (err as any).status = 400;
       throw err;
     }
-    throw e;
+    throw e; 
   } finally {
     conn.release();
   }

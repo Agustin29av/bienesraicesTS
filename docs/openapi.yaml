@@ -1,0 +1,541 @@
+openapi: 3.0.3
+info:
+  title: Bienes Raíces API
+  version: 1.0.0
+  description: >
+    API para gestión de usuarios, vendedores (sellers) y propiedades, con
+    autenticación JWT y reglas de ownership (solo el dueño o un admin puede
+    editar/borrar una propiedad).
+
+servers:
+  - url: http://localhost:3000
+
+tags:
+  - name: Users
+  - name: Sellers
+  - name: Properties
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # ─── USERS ──────────────────────────────────────────────────────────────────
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, enum: [admin, seller, buyer] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    RegisterUser:
+      type: object
+      required: [name, email, password]
+      properties:
+        name: { type: string, minLength: 2 }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
+        role:
+          type: string
+          enum: [admin, seller, buyer]
+          default: buyer
+
+    LoginBody:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
+
+    LoginResponse:
+      type: object
+      properties:
+        token: { type: string }
+
+    # ─── SELLERS ────────────────────────────────────────────────────────────────
+    Seller:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+        userId:
+          type: integer
+          nullable: true
+        property_count: { type: integer }
+
+    CreateSeller:
+      type: object
+      required: [name, email]
+      properties:
+        name: { type: string, minLength: 2 }
+        email: { type: string, format: email }
+
+    UpdateSeller:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+        email: { type: string, format: email }
+        userId:
+          type: integer
+          description: Solo admin puede modificar este campo.
+
+    SellersListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Seller' }
+        page: { type: integer }
+        limit: { type: integer }
+        total: { type: integer }
+        totalPages: { type: integer }
+
+    # ─── PROPERTIES ────────────────────────────────────────────────────────────
+    Property:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        price: { type: number }
+        description: { type: string }
+        rooms: { type: integer }
+        bathrooms: { type: integer }
+        parking: { type: integer }
+        sellerId: { type: integer }
+
+    PropertyWithSeller:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        price: { type: number }
+        description: { type: string }
+        rooms: { type: integer }
+        bathrooms: { type: integer }
+        parking: { type: integer }
+        sellerId: { type: integer }
+        sellerName: { type: string }
+        sellerEmail: { type: string, format: email }
+
+    CreateProperty:
+      type: object
+      required: [title, price, description, rooms, bathrooms, parking, sellerId]
+      properties:
+        title: { type: string, minLength: 2 }
+        price: { type: number, minimum: 0 }
+        description: { type: string, minLength: 3 }
+        rooms: { type: integer, minimum: 0 }
+        bathrooms: { type: integer, minimum: 0 }
+        parking: { type: integer, minimum: 0 }
+        sellerId: { type: integer, minimum: 1 }
+
+    UpdateProperty:
+      type: object
+      description: Todos los campos son opcionales; debe enviarse al menos uno.
+      properties:
+        title: { type: string, minLength: 2 }
+        price: { type: number, minimum: 0 }
+        description: { type: string, minLength: 3 }
+        rooms: { type: integer, minimum: 0 }
+        bathrooms: { type: integer, minimum: 0 }
+        parking: { type: integer, minimum: 0 }
+        sellerId: { type: integer, minimum: 1 }
+
+    PropertiesListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Property' }
+        page: { type: integer }
+        limit: { type: integer }
+        total: { type: integer }
+        totalPages: { type: integer }
+
+    PropertiesWithSellerResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/PropertyWithSeller' }
+
+    SearchPropertiesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Property' }
+
+    # ─── GENERIC RESPONSES ─────────────────────────────────────────────────────
+    IdCreatedResponse:
+      type: object
+      properties:
+        id: { type: integer }
+
+    ErrorResponse:
+      type: object
+      properties:
+        error: { type: string }
+        message: { type: string }
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: ValidationError
+        details:
+          type: object
+          properties:
+            formErrors:
+              type: array
+              items: { type: string }
+            fieldErrors:
+              type: object
+              additionalProperties:
+                type: array
+                items: { type: string }
+
+paths:
+  # ─── USERS ───────────────────────────────────────────────────────────────────
+  /api/users/register:
+    post:
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterUser' }
+            examples:
+              seller:
+                value:
+                  name: "Seller Uno"
+                  email: "seller1@test.com"
+                  password: "12345678"
+                  role: "seller"
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdCreatedResponse' }
+        '409':
+          description: Email already in use
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '400':
+          description: ValidationError
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationErrorResponse' }
+
+  /api/users/login:
+    post:
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginBody' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '400':
+          description: ValidationError
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationErrorResponse' }
+
+  /api/users/me:
+    get:
+      tags: [Users]
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/users/{id}:
+    delete:
+      tags: [Users]
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '204': { description: No Content }
+        '401':
+          description: Unauthorized
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+        '403':
+          description: Forbidden (solo admin)
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+        '404':
+          description: User not found
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+
+  # ─── SELLERS ─────────────────────────────────────────────────────────────────
+  /api/sellers:
+    get:
+      tags: [Sellers]
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+        - in: query
+          name: sort
+          schema: { type: string, enum: [name:asc, name:desc] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SellersListResponse' }
+    post:
+      tags: [Sellers]
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateSeller' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdCreatedResponse' }
+        '401': { description: Unauthorized }
+        '403': { description: Forbidden (solo admin/seller) }
+        '409':
+          description: Duplicate email
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '400':
+          description: ValidationError
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationErrorResponse' }
+
+  /api/sellers/{id}:
+    get:
+      tags: [Sellers]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Seller' }
+        '404': { description: Not found }
+    put:
+      tags: [Sellers]
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, minimum: 1 }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateSeller' }
+      responses:
+        '204': { description: No Content }
+        '401': { description: Unauthorized }
+        '403': { description: Forbidden (solo admin/seller; userId solo admin) }
+        '400':
+          description: ValidationError
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationErrorResponse' }
+        '404': { description: Not found }
+    delete:
+      tags: [Sellers]
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '204': { description: No Content }
+        '401': { description: Unauthorized }
+        '403': { description: Forbidden (solo admin) }
+        '404': { description: Not found }
+
+  # ─── PROPERTIES ──────────────────────────────────────────────────────────────
+  /api/properties:
+    get:
+      tags: [Properties]
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+        - in: query
+          name: sort
+          description: price|title|created_at:asc|desc
+          schema:
+            type: string
+            example: "price:asc"
+        - in: query
+          name: sellerId
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: minPrice
+          schema: { type: number, minimum: 0 }
+        - in: query
+          name: maxPrice
+          schema: { type: number, minimum: 0 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PropertiesListResponse' }
+        '400':
+          description: ValidationError
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationErrorResponse' }
+    post:
+      tags: [Properties]
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateProperty' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdCreatedResponse' }
+        '401': { description: Unauthorized }
+        '403': { description: Forbidden (solo admin/seller) }
+        '404': { description: Seller not found }
+        '400':
+          description: ValidationError
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationErrorResponse' }
+
+  /api/properties/{id}:
+    get:
+      tags: [Properties]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Property' }
+        '404': { description: Not found }
+    put:
+      tags: [Properties]
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, minimum: 1 }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateProperty' }
+      responses:
+        '204': { description: No Content }
+        '401': { description: Unauthorized }
+        '403':
+          description: Forbidden (ownership: solo dueño o admin)
+        '404': { description: Not found }
+        '400':
+          description: ValidationError
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationErrorResponse' }
+    delete:
+      tags: [Properties]
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '204': { description: No Content }
+        '401': { description: Unauthorized }
+        '403':
+          description: Forbidden (ownership: solo dueño o admin)
+        '404': { description: Not found }
+
+  /api/properties/search:
+    get:
+      tags: [Properties]
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string, minLength: 2 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SearchPropertiesResponse' }
+        '400':
+          description: ValidationError
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationErrorResponse' }
+
+  /api/properties/with-sellers:
+    get:
+      tags: [Properties]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PropertiesWithSellerResponse' }

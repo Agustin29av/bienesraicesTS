@@ -1,3 +1,4 @@
+// src/routes/Sellers.ts
 import { Router } from "express";
 import { validate } from "../middlewares/validate";
 import { asyncHandler } from "../utils/asyncHandler";
@@ -12,7 +13,7 @@ import * as SellerController from "../controllers/SellerController";
 
 const router = Router();
 
-// Públicos (si preferís, podés pedir auth también)
+// Públicos (podés exigir auth si querés)
 router.get(
   "/",
   validate({ query: listSellersQuery }),
@@ -28,15 +29,15 @@ router.get(
 // Protegidos
 router.post(
   "/",
-  auth(true),
+  auth(),                                   // token requerido
   requireRole("admin", "seller"),
-  validate({ body: createSellerBody }),
+  validate({ body: createSellerBody }),     // ✅ no valida params acá
   asyncHandler(SellerController.createSeller)
 );
 
 router.put(
   "/:id",
-  auth(true),
+  auth(),                                   // ✅ token requerido (no opcional)
   requireRole("admin", "seller"),
   validate({ params: sellerIdParam, body: updateSellerBody }),
   asyncHandler(SellerController.updateSeller)
@@ -44,7 +45,7 @@ router.put(
 
 router.delete(
   "/:id",
-  auth(true),
+  auth(),                                   // ✅ token requerido
   requireRole("admin"),
   validate({ params: sellerIdParam }),
   asyncHandler(SellerController.removeSeller)

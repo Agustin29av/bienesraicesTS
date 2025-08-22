@@ -5,7 +5,12 @@ export const createSellerBody = z.object({
   email: z.string().email(),
 });
 
-export const updateSellerBody = createSellerBody.partial();
+// ✅ en update permitimos userId (opcional)
+export const updateSellerBody = z.object({
+  name: z.string().min(2).optional(),
+  email: z.string().email().optional(),
+  userId: z.coerce.number().int().positive().optional(),
+});
 
 export const sellerIdParam = z.object({
   id: z.coerce.number().int().positive(),

@@ -19,3 +19,4 @@ export function requirePropertyOwnershipOrAdmin() {
     return res.status(403).json({ error: "Forbidden" });
   };
 }
+

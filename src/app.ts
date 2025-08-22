@@ -7,6 +7,10 @@ import SellersRoutes from "./routes/Sellers";
 import PropertiesRoutes from "./routes/Properties";
 import { errorHandler } from "./middlewares/errorHandler";
 
+import path from "node:path";
+import swaggerUi from "swagger-ui-express";
+import YAML from "yamljs";
+
 const app = express();
 
 app.use(express.json());
@@ -17,6 +21,14 @@ app.use(helmet());
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 50 });
 app.use("/api/users/login", authLimiter);
 app.use("/api/users/register", authLimiter);
+
+const openapiPath = path.join(__dirname, "..", "docs", "openapi.yaml");
+try{
+    const swaggerDoc = YAML.load(openapiPath);
+    app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerDoc));
+} catch {
+
+}
 
 // rutas
 app.use("/api/users", UsersRoutes);
